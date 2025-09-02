@@ -1,0 +1,262 @@
+USE MYSQL_ASSIGNMENT_DB; 
+
+
+
+SELECT * FROM TB_BOOK; 
+SELECT * FROM TB_BOOK_AUTHOR; 
+SELECT * FROM TB_PUBLISHER; 
+SELECT * FROM TB_WRITER; 
+
+SELECT BOOK_NO, BOOK_NM 
+	FROM TB_BOOK
+	WHERE CHAR_LENGTH(BOOK_NM) >= 25; 
+    
+    
+    
+    
+-- 2. 휴대폰 번호가 '019'로 시작하는 김씨 성을 가진 작가를 이름순으로 정렬했을 때 
+-- 가장 먼저 표시되는 작가 이름과 사무실 전화번호, 집 전화번호, 휴대폰 전화번호를 표시하는 SQL    
+SELECT WRITER_NM, OFFICE_TELNO, HOME_TELNO, MOBILE_NO
+	FROM TB_WRITER
+    WHERE MOBILE_NO LIKE '019%'
+		AND WRITER_NM LIKE '김%' 
+    ORDER BY WRITER_NM ASC;
+    
+    
+    
+-- 3. 저작 형태가 옮김에ㅔ 해당한느 작가들이 총 몇명인지 계산하는 SQL 구문을 작성하시오 
+-- (결과 헤더는 '작가(명)'으로 표시되도록 할 것) 
+SELECT * FROM TB_BOOK_AUTHOR;
+SELECT COUNT(DISTINCT(WRITER_NO))
+	FROM TB_BOOK_AUTHOR
+    WHERE COMPOSE_TYPE = '옮김'; 
+    
+    
+    
+-- 4. 가장 최근에 발간된 최신작 이름과 발행일자, 출판사 이름을 표시하는 SQL 구문을 작성하시오. 
+SELECT * FROM TB_BOOK; 
+SELECT BOOK_NM, ISSUE_DATE, PUBLISHER_NM
+	FROM TB_BOOK
+    ORDER BY ISSUE_DATE DESC 
+    LIMIT 1; 
+    
+    
+-- 5. 가장 많은 책을 쓴 작가 3명의 이름과 수량을 표시하되, 많이 쓴 순서대로 표시하는 SQL 
+-- 단, 동명이인 작가는 없다고 가정한다. 결과 헤더는 '작가이름', '권 수'로 표시되도록 할 것 
+SELECT * FROM TB_BOOK; 
+SELECT * FROM TB_BOOK_AUTHOR;
+SELECT * FROM TB_WRITER; 
+SELECT * FROM TB_PUBLISHER; 
+
+SELECT W.WRITER_NM AS '작가이름', 
+		COUNT(A.WRITER_NO) AS '권 수'
+	FROM TB_BOOK_AUTHOR A
+		JOIN TB_WRITER W
+		ON A.WRITER_NO = W.WRITER_NO
+    GROUP BY A.WRITER_NO
+    ORDER BY COUNT(W.WRITER_NO) DESC; 
+    
+    
+
+-- 6. 2007년도에 출판된 번역서 이름과 번역자(역자)를 표시하는 SQL 
+SELECT * FROM TB_BOOK; 
+SELECT * FROM TB_BOOK_AUTHOR; 
+SELECT * FROM TB_WRITER; 
+
+
+SELECT BOOK_NM, WRITER_NM
+	FROM TB_BOOK B
+		JOIN TB_BOOK_AUTHOR A 
+        ON B.BOOK_NO = A.BOOK_NO
+        JOIN TB_WRITER W
+        ON A.WRITER_NO = W.WRITER_NO
+    WHERE COMPOSE_TYPE = '옮김'
+		AND ISSUE_DATE BETWEEN '2007-01-01' AND '2007-12-31';
+        
+        
+        
+
+-- 7.동명이인 작가의 이름을 찾으려고 한다. 
+-- 이름과 동명이인 숫자를 표시하는 SQL and
+SELECT * FROM TB_WRITER; 
+SELECT W1.WRITER_NM,  COUNT(W1.WRITER_NM)
+	FROM TB_WRITER W1 
+    JOIN TB_WRITER W2 
+		ON W1.WRITER_NM = W2.WRITER_NM
+	WHERE W1.WRITER_NO != W2.WRITER_NO
+    GROUP BY W1.WRITER_NM; 
+    
+    
+
+-- 8. '황금가지' 출판사를 위한 기획전을 열려고 한다. 
+-- 재고 수량이 10권 미만인 도서명과 가격, 재고상태를 나타내는 SQL 
+-- 재고 수량이 5권 미만인 도서는 '추가주문필요', 나머지 '소량보유' 
+-- 재고 수량이 많은 순, 도서명 순으로 표시되도록 한다. 
+
+SELECT * FROM TB_BOOK;
+
+SELECT BOOK_NM AS '도서명', 
+		PRICE AS '가격', 
+        STOCK_QTY AS '재고수량', 
+		CASE
+			WHEN STOCK_QTY < 5 THEN '추가주문필요'
+			WHEN STOCK_QTY >= 5 THEN '소량보유'
+		END AS 재고상태 
+	FROM TB_BOOK 
+    WHERE PUBLISHER_NM = '황금가지' 
+    AND STOCK_QTY < 10
+    ORDER BY STOCK_QTY DESC, BOOK_NM ASC; 
+    
+    
+    -- 9. '아타트롤' 도서 작가와 역자를 표시하는 SQL
+    -- (결과 헤더는 '도서명', '저자', '역자'로 표시할 것) 
+    
+    SELECT * FROM TB_BOOK WHERE BOOK_NM ='아타트롤'; 
+    SELECT * FROM TB_BOOK_AUTHOR WHERE BOOK_NO = 1991081002; 
+    SELECT * FROM TB_WRITER WHERE WRITER_NM = '아타트롤'; 
+
+	SELECT BOOK_NM, 
+		W.WRITER_NM, 
+		A.COMPOSE_TYPE 
+		FROM TB_BOOK B 
+			JOIN TB_BOOK_AUTHOR A
+				ON B.BOOK_NO = A.BOOK_NO 
+			JOIN TB_WRITER W 
+				ON A.WRITER_NO = W.WRITER_NO 
+		WHERE B.BOOK_NM = '아타트롤'; 
+
+
+
+ -- 10. 현재 기준 최초 발행일로부터 만 30년이 경과되고, 재고사량이 90권 이상이며, 도서 가격이 8,000원 이상이 도서에 대해
+ -- 도서명, 재고수량, 원래가격, 20% 인하가격을 구하는 SQL 
+ -- 결과헤더는 도서명, 재고수량, 가격(ORG), 가격(NEW)로 표시할 것
+ -- 재고수량이 많은 순, 할인가격이 높은 순, 도서명 순으로 표시 
+
+ SELECT BOOK_NM AS '도서명',
+		STOCK_QTY AS '재고 수량', 
+		PRICE AS '가격(ORG)',
+        PRICE * 0.8 AS '가격(NEW)'
+	FROM TB_BOOK
+    WHERE DATE_ADD(ISSUE_DATE, INTERVAL 30 YEAR) < NOW()
+		AND PRICE >= 8000
+        AND STOCK_QTY >= 90
+	ORDER BY STOCK_QTY DESC, 
+				PRICE * 0.8 DESC,
+                BOOK_NM ASC; 
+ 
+
+-- ########################################################################################
+
+USE MYSQL_WORKSHOP_DB;
+
+-- 1. 예체능 계열 과목중 과목이름에 논문이 들어가 있고 담당교수가 배정되지 않은 과목의 이름, 학과(가나다순) 
+SELECT * FROM TB_CLASS; 
+SELECT * FROM TB_CLASS_PROFESSOR WHERE PROFESSOR_NO IS NULL;
+SELECT * FROM TB_PROFESSOR;
+SELECT * FROM TB_DEPARTMENT; 
+
+SELECT CLASS_NAME, DEPARTMENT_NAME 
+	FROM TB_CLASS C
+		LEFT OUTER JOIN TB_CLASS_PROFESSOR CP
+			ON C.CLASS_NO = CP.CLASS_NO
+        JOIN TB_DEPARTMENT D
+			ON D.DEPARTMENT_NO = C.DEPARTMENT_NO
+    WHERE CLASS_NAME LIKE '%논문%'
+		AND CP.CLASS_NO IS NULL
+        AND CATEGORY = '예체능'
+	ORDER BY DEPARTMENT_NAME ASC; 
+
+
+
+-- 2. '환경조경학'과 같은 계열의 학과이름과 학과의 교수수를 조회하되 교수수가 '0'인 학과 
+SELECT CATEGORY FROM TB_DEPARTMENT WHERE DEPARTMENT_NAME = '환경조경학과';
+
+SET @DEPCATEGORY = (SELECT CATEGORY FROM TB_DEPARTMENT WHERE DEPARTMENT_NAME = '환경조경학과'); 
+SELECT @DEPCATEGORY; 
+
+SELECT DEPARTMENT_NAME, COUNT(PROFESSOR_NO)
+	FROM TB_DEPARTMENT D
+		LEFT OUTER JOIN TB_PROFESSOR P
+        ON D.DEPARTMENT_NO = P.DEPARTMENT_NO 
+    WHERE CATEGORY = @DEPCATEGORY
+		AND P.DEPARTMENT_NO IS NULL
+	GROUP BY DEPARTMENT_NAME; 
+    
+    
+    
+-- 3. 
+-- 서가람 학생의 지도 교수가 지도한 학생들의 년도 별 평점(소수점 1자리, 반올림), 년도를 최신순 / 입학일자가 2001년 1월 1일부터 현재까지
+SELECT * FROM TB_GRADE; 
+SELECT * FROM TB_CLASS;
+SELECT * FROM TB_STUDENT; 
+SET @COACH_NO = (SELECT COACH_PROFESSOR_NO FROM TB_STUDENT WHERE STUDENT_NAME = '서가람'); 
+
+SELECT DISTINCT(DATE_FORMAT(TERM_NO, '%Y')) FROM TB_GRADE; 
+
+SELECT LEFT(TERM_NO, 4), ROUND(AVG(POINT), 1)
+	FROM TB_STUDENT S
+		JOIN TB_GRADE G
+        ON S.STUDENT_NO = G.STUDENT_NO
+	WHERE COACH_PROFESSOR_NO = @COACH_NO
+		AND ENTRANCE_DATE >= '2001-01-01'
+    GROUP BY LEFT(TERM_NO, 4)
+    ORDER BY LEFT(TERM_NO, 4) DESC; 
+    
+    
+    
+    
+-- 4. 과목을 하나도 배정받지 못한 교수가 지도교수인 학생수 
+-- 지도 교수 이름으로 오름차순 
+
+SELECT * FROM TB_CLASS_PROFESSOR; 
+SELECT * FROM TB_PROFESSOR; 
+
+
+SELECT P.PROFESSOR_NAME, COUNT(S.STUDENT_NO)
+	FROM TB_PROFESSOR P
+		LEFT OUTER JOIN TB_CLASS_PROFESSOR CP
+        ON P.PROFESSOR_NO = CP.PROFESSOR_NO
+        JOIN TB_STUDENT S
+		ON S.COACH_PROFESSOR_NO = P.PROFESSOR_NO
+	WHERE CLASS_NO IS NULL
+    GROUP BY PROFESSOR_NAME
+    ORDER BY PROFESSOR_NAME ASC; 
+
+
+
+
+-- 5. 예체능, 공학 계열의 모든 학과 이름과 학생수 
+-- 계열이름 순으로 정렬하고 같으면 학생수가 많은 순으로 정렬
+
+SELECT D.CATEGORY, D.DEPARTMENT_NAME, COUNT(S.STUDENT_NO)
+	FROM TB_DEPARTMENT D
+		JOIN TB_STUDENT S
+		ON D.DEPARTMENT_NO = S.DEPARTMENT_NO 
+    WHERE CATEGORY IN ('공학', '예체능')
+    GROUP BY CATEGORY, D.DEPARTMENT_NAME
+    ORDER BY CATEGORY ASC, COUNT(S.STUDENT_NO) DESC; 
+    
+    
+    
+    
+    
+-- 6. 2001 ~ 2005년 까지의 누적 수강생수가 가장 많았던 과목 상위 3개 를 수강생수가 많은 순으로 정렬
+SELECT * FROM TB_CLASS; 
+SELECT * FROM TB_GRADE;
+
+SELECT G.CLASS_NO, CLASS_NAME, COUNT(STUDENT_NO)
+	FROM TB_GRADE G  
+		JOIN TB_CLASS C 
+        ON G.CLASS_NO = C.CLASS_NO 
+    GROUP BY CLASS_NO;
+
+SELECT C.CLASS_NAME, COUNT(STUDENT_NO)
+	FROM TB_GRADE G
+		JOIN TB_CLASS C 
+        ON G.CLASS_NO = C.CLASS_NO
+	WHERE LEFT(TERM_NO, 4) BETWEEN '2001' AND '2005' 
+    GROUP BY CLASS_NAME
+    ORDER BY COUNT(STUDENT_NO) DESC
+    LIMIT 3; 
+    
+
